@@ -1,4 +1,4 @@
-"""ui module contains printing banner and setup to make the game better looking and easier to interact with."""
+"""UI helpers for output formatting and safe user interaction."""
 def print_banner(title):
     """Print a decorated section header."""
     width = 52

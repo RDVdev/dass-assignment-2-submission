@@ -1,0 +1,8 @@
+#!/home/devansh/sem4/dass/dass-assignment-2-submission/2024111019/whitebox/monepoly/moneypoly/.venv/bin/python
+# -*- coding: utf-8 -*-
+import re
+import sys
+from isort.main import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())
