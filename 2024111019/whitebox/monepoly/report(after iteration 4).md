@@ -366,3 +366,98 @@ Added a trailing newline at the end of the file. POSIX defines a "line" as a seq
 | Files modified | 4 (`cards.py`, `board.py`, `player.py`, `game.py`) |
 | Warning types resolved | C0301 (×24), C0304 (×2), C0121 (×1), C0325 (×2), W1309 (×1) |
 | Score improvement | +0.47 (9.38 → 9.85) |
+
+---
+
+## Iteration 4 – Control Flow & Error Handling (R1705, R1723, W0702, W0201)
+
+**Score after fix: 9.85 → 9.91 / 10 (+0.06)**
+
+### What Are These Warnings?
+
+| Code | Name | Meaning |
+|------|------|---------|
+| **R1705** | `no-else-return` | An `else` block follows a `return` statement — the `else` is unnecessary since `return` already exits the function |
+| **R1723** | `no-else-break` | An `elif` follows a `break` — the `elif` can be a plain `if` since `break` already exits the loop |
+| **W0702** | `bare-except` | Using `except:` without specifying an exception type catches everything including `KeyboardInterrupt` and `SystemExit` |
+| **W0201** | `attribute-defined-outside-init` | An instance attribute is first defined in a method other than `__init__`, making the class schema harder to understand at a glance |
+
+### Pylint Warnings Found (4 total)
+
+| # | File | Line | Pylint Code | Warning Message |
+|---|------|------|-------------|-----------------|
+| 1 | `property.py` | 51 | R1705 | Unnecessary `else` after `return` in `unmortgage()` |
+| 2 | `game.py` | 401 | R1723 | Unnecessary `elif` after `break` in `interactive_menu()` |
+| 3 | `ui.py` | 72 | W0702 | No exception type(s) specified (bare except) |
+| 4 | `dice.py` | 26 | W0201 | `doubles_streak` defined outside `__init__` |
+
+### Fixes Applied
+
+#### `property.py`
+**1 warning fixed:** R1705
+
+Removed the unnecessary `else` after `return 0` in `unmortgage()` and de-indented the code block. After a `return`, execution cannot continue, so `else` is dead syntax that adds needless indentation depth.
+
+```diff
+     def unmortgage(self):
+         if not self.is_mortgaged:
+             return 0
+-        else:
+-            cost = int(self.mortgage_value * 1.1)
+-            self.is_mortgaged = False
+-            return cost
++        cost = int(self.mortgage_value * 1.1)
++        self.is_mortgaged = False
++        return cost
+```
+
+#### `game.py`
+**1 warning fixed:** R1723
+
+Changed `elif` to `if` after `break` in `interactive_menu()`. Since `break` exits the loop, the `elif` can never be reached via fall-through from the `break` branch — so `if` is semantically equivalent and removes misleading coupling.
+
+```diff
+             if choice == 0:
+                 break
+-            elif choice == 1:
++            if choice == 1:
+                 ui.print_standings(self.players)
+```
+
+#### `ui.py`
+**1 warning fixed:** W0702
+
+Changed `except:` to `except ValueError:` in `safe_int_input()`. A bare `except` catches *every* exception — including `KeyboardInterrupt` (Ctrl+C) and `SystemExit` — which should normally propagate. Since `int()` only raises `ValueError` on bad input, that is the only exception we need to catch.
+
+```diff
+     try:
+         return int(input(prompt))
+-    except:
++    except ValueError:
+         return default
+```
+
+#### `dice.py`
+**1 warning fixed:** W0201
+
+Replaced `self.reset()` with `self.doubles_streak = 0` directly in `__init__()`. Pylint expects all instance attributes to be visible in `__init__` so readers can see the full object shape in one place. Calling `self.reset()` set the attribute indirectly, but pylint could not trace through the method call.
+
+```diff
+     def __init__(self):
+         self.die1 = 0
+         self.die2 = 0
+-        self.reset()
++        self.doubles_streak = 0
+```
+
+> **Note:** The `reset()` method still exists and works correctly when called later — it just no longer needs to be the initial setter.
+
+### Summary
+
+| Metric | Value |
+|--------|-------|
+| Warnings fixed | 4 |
+| Files modified | 4 (`property.py`, `game.py`, `ui.py`, `dice.py`) |
+| Warning types resolved | R1705 (×1), R1723 (×1), W0702 (×1), W0201 (×1) |
+| Score improvement | +0.06 (9.85 → 9.91) |
+
