@@ -1,5 +1,4 @@
 """Bank module for the game manages funds loans and taxes."""
-import math
 from moneypoly.config import BANK_STARTING_FUNDS
 
 

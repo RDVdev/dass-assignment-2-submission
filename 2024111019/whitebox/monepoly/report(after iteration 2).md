@@ -178,3 +178,99 @@ Added a module-level docstring.
 | Files modified | 10 |
 | Warning types resolved | C0114 (×9), C0115 (×2), C0116 (×3) |
 | Score improvement | +0.21 (9.08 → 9.30) |
+
+---
+
+## Iteration 2 – Unused Imports & Variables (W0611, W0612)
+
+**Score after fix: 9.30 → 9.38 / 10 (+0.08)**
+
+### What Are These Warnings?
+
+| Code | Name | Meaning |
+|------|------|---------|
+| **W0611** | `unused-import` | A module or name is imported but never used anywhere in the file |
+| **W0612** | `unused-variable` | A variable is assigned a value but is never read or referenced |
+
+Unused imports clutter the namespace, mislead readers into thinking the imported module is needed, and can slightly slow down module loading. Unused variables indicate dead code — often a leftover from refactoring — that adds confusion without contributing anything.
+
+### Pylint Warnings Found (6 total)
+
+| # | File | Line | Pylint Code | Warning Message |
+|---|------|------|-------------|-----------------|
+| 1 | `bank.py` | 1 | W0611 | Unused `import math` |
+| 2 | `dice.py` | 2 | W0611 | Unused `BOARD_SIZE` imported from `moneypoly.config` |
+| 3 | `player.py` | 1 | W0611 | Unused `import sys` |
+| 4 | `player.py` | 45 | W0612 | Unused variable `old_position` |
+| 5 | `game.py` | 1 | W0611 | Unused `import os` |
+| 6 | `game.py` | 3 | W0611 | Unused `GO_TO_JAIL_POSITION` imported from `moneypoly.config` |
+
+### Fixes Applied
+
+#### `bank.py`
+**1 warning fixed:** W0611
+
+Removed `import math` — the `math` module was imported but never used anywhere in the file.
+
+```diff
+
+-import math
+ from moneypoly.config import BANK_STARTING_FUNDS
+```
+
+#### `dice.py`
+**1 warning fixed:** W0611
+
+Removed `from moneypoly.config import BOARD_SIZE` — the `BOARD_SIZE` constant was imported but never referenced in the dice module.
+
+```diff
+
+ import random
+-from moneypoly.config import BOARD_SIZE
+```
+
+#### `player.py`
+**2 warnings fixed:** W0611, W0612
+
+1. Removed `import sys` — the `sys` module was imported but never used.
+2. Removed the variable `old_position` in `move()` — it was assigned `self.position` but never read afterwards.
+
+```diff
+
+-import sys
+ from moneypoly.config import STARTING_BALANCE, BOARD_SIZE, GO_SALARY, JAIL_POSITION
+```
+
+```diff
+     def move(self, steps):
+         ...
+-        old_position = self.position
+         self.position = (self.position + steps) % BOARD_SIZE
+```
+
+#### `game.py`
+**2 warnings fixed:** W0611 (×2)
+
+1. Removed `import os` — the `os` module was imported but never used.
+2. Removed `GO_TO_JAIL_POSITION` from the config import — it was imported but the code uses the string `"go_to_jail"` tile type instead.
+
+```diff
+ 
+-import os
+-
+ from moneypoly.config import (
+-    GO_TO_JAIL_POSITION,
+     JAIL_FINE,
+     AUCTION_MIN_INCREMENT,
+     ...
+```
+
+### Summary
+
+| Metric | Value |
+|--------|-------|
+| Warnings fixed | 6 |
+| Files modified | 4 (`bank.py`, `dice.py`, `player.py`, `game.py`) |
+| Warning types resolved | W0611 (×5), W0612 (×1) |
+| Score improvement | +0.08 (9.30 → 9.38) |
+

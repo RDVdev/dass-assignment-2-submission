@@ -1,8 +1,5 @@
 """Main game module runs the game loop and contains the game logic."""
-import os
-
 from moneypoly.config import (
-    GO_TO_JAIL_POSITION,
     JAIL_FINE,
     AUCTION_MIN_INCREMENT,
     INCOME_TAX_AMOUNT,
