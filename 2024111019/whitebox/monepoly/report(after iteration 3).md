@@ -274,3 +274,95 @@ Removed `from moneypoly.config import BOARD_SIZE` — the `BOARD_SIZE` constant 
 | Warning types resolved | W0611 (×5), W0612 (×1) |
 | Score improvement | +0.08 (9.30 → 9.38) |
 
+---
+
+## Iteration 3 – Code Style & Formatting (C0301, C0304, C0121, C0325, W1309)
+
+**Score after fix: 9.38 → 9.85 / 10 (+0.47)**
+
+### What Are These Warnings?
+
+| Code | Name | Meaning |
+|------|------|---------|
+| **C0301** | `line-too-long` | A line exceeds 100 characters (pylint's default limit) |
+| **C0304** | `missing-final-newline` | The file does not end with a newline character |
+| **C0121** | `singleton-comparison` | Using `== True` or `== False` instead of truthiness checks or `is True` |
+| **C0325** | `superfluous-parens` | Unnecessary parentheses after a keyword like `not` |
+| **W1309** | `f-string-without-interpolation` | An f-string is used but contains no `{…}` expressions |
+
+### Pylint Warnings Found (30 total)
+
+| # | File | Line | Pylint Code | Warning Message |
+|---|------|------|-------------|-----------------|
+| 1–24 | `cards.py` | 6–32 | C0301 | 24 lines exceeding 100 characters |
+| 25 | `player.py` | 87 | C0304 | Missing final newline |
+| 26 | `game.py` | 467 | C0304 | Missing final newline |
+| 27 | `board.py` | 110 | C0121 | `prop.is_mortgaged == True` — singleton comparison |
+| 28 | `game.py` | 452 | C0325 | Superfluous parens after `not` |
+| 29 | `game.py` | 461 | C0325 | Superfluous parens after `not` |
+| 30 | `game.py` | 380 | W1309 | f-string `f"GAME OVER"` has no interpolation |
+
+### Fixes Applied
+
+#### `cards.py`
+**24 warnings fixed:** C0301 (×24)
+
+All card definitions used single-line dicts padded with spaces to align columns, causing every line to exceed 100 characters. Reformatted each dict to split the `"description"` key onto its own line, with `"action"` and `"value"` on the next line.
+
+```diff
+ CHANCE_CARDS = [
+-    {"description": "Advance to Go. Collect $200.",                          "action": "move_to",  "value": 0},
++    {"description": "Advance to Go. Collect $200.",
++     "action": "move_to", "value": 0},
+     ...  # same pattern applied to all 24 card entries
+ ]
+```
+
+#### `board.py`
+**1 warning fixed:** C0121
+
+Changed `== True` to a simple truthiness check. Using `== True` can yield surprising results with non-boolean truthy values and is considered non-Pythonic.
+
+```diff
+-        if prop.is_mortgaged == True:
++        if prop.is_mortgaged:
+             return False
+```
+
+#### `player.py`
+**1 warning fixed:** C0304
+
+Added a trailing newline at the end of the file. POSIX defines a "line" as a sequence ending with a newline, so the last line of every file should end with one.
+
+#### `game.py`
+**4 warnings fixed:** C0304, C0325 (×2), W1309
+
+1. **W1309** — Changed `f"GAME OVER"` to `"GAME OVER"`. There are no `{…}` placeholders, so the `f` prefix is unnecessary.
+
+```diff
+-            ui.print_banner(f"GAME OVER")
++            ui.print_banner("GAME OVER")
+```
+
+2. **C0325 (×2)** — Removed superfluous parentheses around the chained comparison after `not`. Python's operator precedence already handles `not 0 <= idx < len(…)` correctly without extra parens.
+
+```diff
+-        if not (0 <= idx < len(others)):
++        if not 0 <= idx < len(others):
+```
+
+```diff
+-        if not (0 <= pidx < len(player.properties)):
++        if not 0 <= pidx < len(player.properties):
+```
+
+3. **C0304** — Added a trailing newline at end of file.
+
+### Summary
+
+| Metric | Value |
+|--------|-------|
+| Warnings fixed | 30 |
+| Files modified | 4 (`cards.py`, `board.py`, `player.py`, `game.py`) |
+| Warning types resolved | C0301 (×24), C0304 (×2), C0121 (×1), C0325 (×2), W1309 (×1) |
+| Score improvement | +0.47 (9.38 → 9.85) |
