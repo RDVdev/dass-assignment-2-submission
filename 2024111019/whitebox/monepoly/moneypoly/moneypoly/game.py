@@ -19,6 +19,8 @@ class Game:
     """Manages the full state and flow of a MoneyPoly game session."""
 
     def __init__(self, player_names):
+        if len(player_names) < 2:
+            raise ValueError("min 2 players required")
         self.board = Board()
         self.bank = Bank()
         self.dice = Dice()
@@ -136,7 +138,7 @@ class Game:
         Purchase `prop` on behalf of `player`.
         Returns True on success, False if the player cannot afford it.
         """
-        if player.balance <= prop.price:
+        if player.balance < prop.price:
             print(f"  {player.name} cannot afford {prop.name} (${prop.price}).")
             return False
         player.deduct_money(prop.price)
