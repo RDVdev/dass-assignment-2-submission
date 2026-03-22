@@ -644,3 +644,285 @@ Your code has been rated at 10.00/10
 | Files modified | 4 (`cards.py`, `property.py`, `player.py`, `ui.py`) |
 | Warning types resolved | C0303 (×24), C0301 (×4), C0304 (×1) |
 | Score improvement | 9.55 → 10.00 |
+
+--
+
+## 1.3 Rigorous White-Box Test Cases
+
+### Test Files Added
+
+| File | Purpose |
+|------|---------|
+| `tests/test_player_whitebox.py` | Player money, movement, bankruptcy, jail state |
+| `tests/test_bank_whitebox.py` | Bank collection, payout, and loan behavior |
+| `tests/test_dice_cards_whitebox.py` | Dice bounds/streak and CardDeck cycling branches |
+| `tests/test_property_board_whitebox.py` | Property rent/mortgage/group logic and board purchasability |
+| `tests/test_game_whitebox.py` | Game constructor, buy/rent/trade/mortgage/jail/winner branches |
+| `tests/test_game_branches_whitebox.py` | Card action dispatch, tile handlers, bankruptcy cleanup |
+| `tests/test_main_flow_whitebox.py` | Entrypoint parsing and interrupt handling |
+
+### Execution Summary
+
+- Total tests run: `42`
+- Passed: `30`
+- Failed: `12`
+
+These failures are real logic issues, not flaky tests.
+
+---
+
+### Error 1 - Bank.collect accepts negative amounts
+
+- Found by: `test_collect_negative_is_ignored`
+- Location: `moneypoly/bank.py` -> `Bank.collect`
+
+Why this test is needed:
+`collect()` is used by taxes, purchases, and fines. If it accepts negative values, a caller can accidentally remove money from the bank through the wrong API.
+
+What failed:
+Bank balance changed after `collect(-250)`.
+
+Root issue:
+Method always does `self._funds += amount` with no sign check.
+
+---
+
+### Error 2 - Bank.give_loan does not reduce bank reserves
+
+- Found by: `test_give_loan_reduces_bank_funds`
+- Location: `moneypoly/bank.py` -> `Bank.give_loan`
+
+Why this test is needed:
+The method docstring says loans reduce bank funds. The behavior should match documentation and accounting.
+
+What failed:
+Player balance increased, but bank balance stayed unchanged.
+
+Root issue:
+`give_loan()` credits player and logs loan, but never subtracts from `self._funds`.
+
+---
+
+### Error 3 - Dice are 5-sided instead of 6-sided
+
+- Found by: `test_roll_uses_six_sided_bounds`
+- Location: `moneypoly/dice.py` -> `Dice.roll`
+
+Why this test is needed:
+Monopoly requires two six-sided dice. Wrong bounds distort movement, probabilities, and doubles behavior.
+
+What failed:
+Patched assertion caught `random.randint(1, 5)` instead of `(1, 6)`.
+
+Root issue:
+Upper bound is hardcoded to `5` for both dice.
+
+---
+
+### Error 4 - Passing Go does not award salary
+
+- Found by: `test_move_passing_go_gets_salary`
+- Location: `moneypoly/player.py` -> `Player.move`
+
+Why this test is needed:
+Crossing from high positions to low positions should pay Go salary, not just exact landing on position 0.
+
+What failed:
+From position 38 moving 5 steps, player ended on 3 but did not receive salary.
+
+Root issue:
+Salary condition is only `if self.position == 0`.
+
+---
+
+### Error 5 - Game constructor allows invalid player counts
+
+- Found by: `test_constructor_rejects_less_than_two_players`
+- Location: `moneypoly/game.py` -> `Game.__init__`
+
+Why this test is needed:
+Gameplay and turn rotation assume at least two players.
+
+What failed:
+No `ValueError` for single-player game setup.
+
+Root issue:
+No validation for minimum player count.
+
+---
+
+### Error 6 - Property purchase rejects exact-balance buyer
+
+- Found by: `test_buy_property_with_exact_balance_should_succeed`
+- Location: `moneypoly/game.py` -> `Game.buy_property`
+
+Why this test is needed:
+If player cash equals price exactly, purchase should be valid.
+
+What failed:
+Buyer with exact asking price was rejected.
+
+Root issue:
+Condition uses `player.balance <= prop.price` instead of strict `<`.
+
+---
+
+### Error 7 - Rent is deducted from tenant but not paid to owner
+
+- Found by: `test_pay_rent_transfers_money_to_owner`
+- Location: `moneypoly/game.py` -> `Game.pay_rent`
+
+Why this test is needed:
+Rent transfer is a two-sided transaction: payer down, owner up.
+
+What failed:
+Tenant balance decreased, owner balance stayed unchanged.
+
+Root issue:
+Missing `prop.owner.add_money(rent)`.
+
+---
+
+### Error 8 - Trade does not credit seller cash
+
+- Found by: `test_trade_credits_seller`
+- Location: `moneypoly/game.py` -> `Game.trade`
+
+Why this test is needed:
+Property sale must transfer both ownership and payment.
+
+What failed:
+Buyer lost cash, seller got no money.
+
+Root issue:
+Missing `seller.add_money(cash_amount)`.
+
+---
+
+### Error 9 - find_winner returns poorest player
+
+- Found by: `test_find_winner_returns_highest_net_worth`
+- Location: `moneypoly/game.py` -> `Game.find_winner`
+
+Why this test is needed:
+Winner should be highest net worth at game end.
+
+What failed:
+Method returned lowest-balance player.
+
+Root issue:
+Uses `min(...)` instead of `max(...)`.
+
+---
+
+### Error 10 - Mortgage transaction corrupts bank collected metric
+
+- Found by: `test_mortgage_does_not_reduce_total_collected_stat`
+- Location: `moneypoly/game.py` -> `Game.mortgage_property`
+
+Why this test is needed:
+Mortgage is a payout flow, not a collection flow. Collection stats should not go negative.
+
+What failed:
+`_total_collected` dropped below zero after mortgage.
+
+Root issue:
+Uses `self.bank.collect(-payout)` instead of payout API.
+
+---
+
+### Error 11 - Voluntary jail fine does not deduct player money
+
+- Found by: `test_voluntary_jail_fine_deducts_player_balance`
+- Location: `moneypoly/game.py` -> `Game._handle_jail_turn`
+
+Why this test is needed:
+If player chooses to pay jail fine, player cash should decrease and bank should increase.
+
+What failed:
+Player was released and bank collected fine, but player balance did not change.
+
+Root issue:
+Missing `player.deduct_money(JAIL_FINE)` in voluntary-pay branch.
+
+---
+
+### Error 12 - Move-to card ignores railroad property flow
+
+- Found by: `test_move_to_railroad_card_triggers_property_flow`
+- Location: `moneypoly/game.py` -> `Game._card_move_to`
+
+Why this test is needed:
+Railroads are purchasable property tiles. Movement cards should trigger same handling as normal landing.
+
+What failed:
+Card move to position 5 (railroad) did not call property handling.
+
+Root issue:
+`_card_move_to` only checks `tile == "property"`, not `"railroad"`.
+
+---
+
+### Coverage Notes
+
+The suite now checks:
+
+- All Player money and movement branches
+- Bank positive/zero/negative collection and payout rules
+- Dice roll bounds and doubles streak behavior
+- Property rent, mortgage, and group-ownership logic
+- Board tile typing and purchasability checks
+- Game buy/rent/trade/mortgage/unmortgage/jail/winner paths
+- Card action dispatch and deck behavior
+- Main input parsing and interrupt path
+
+This gives broad white-box confidence and a concrete defect list grounded in test evidence.
+
+---
+
+## 1.4 Post-Fix Verification (All Defects Resolved)
+
+After implementing fixes for all 12 confirmed defects, the validation was rerun.
+
+### Test Validation
+
+Command:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Result:
+
+- Total tests: `42`
+- Passed: `42`
+- Failed: `0`
+
+### Pylint Validation
+
+Command:
+
+```bash
+/tmp/pylint_venv/bin/pylint moneypoly/ main.py --output-format=text
+```
+
+Result:
+
+- Pylint score: `10.00/10`
+
+### Fixed Defect Status
+
+All previously reported issues in section 1.3 are now fixed in code:
+
+1. `Bank.collect` now ignores non-positive amounts.
+2. `Bank.give_loan` now correctly reduces bank reserves via payout.
+3. `Dice.roll` now uses six-sided bounds `(1, 6)`.
+4. `Player.move` now pays Go salary when passing or landing on Go.
+5. `Game.__init__` now rejects fewer than 2 players.
+6. `Game.buy_property` now allows exact-balance purchase.
+7. `Game.pay_rent` now credits the owner.
+8. `Game.trade` now credits the seller.
+9. `Game.find_winner` now selects highest net worth.
+10. `Game.mortgage_property` now uses bank payout flow (no negative collect accounting).
+11. Voluntary jail fine now deducts player balance.
+12. Card move-to flow now handles both property and railroad tile paths.
