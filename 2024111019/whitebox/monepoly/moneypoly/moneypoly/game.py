@@ -208,6 +208,7 @@ class Game:
             return False
 
         buyer.deduct_money(cash_amount)
+        seller.add_money(cash_amount)
         prop.owner = buyer
         seller.remove_property(prop)
         buyer.add_property(prop)
@@ -272,6 +273,7 @@ class Game:
         # Offer to pay the fine voluntarily
         if ui.confirm(f"  Pay ${JAIL_FINE} fine to leave jail? (y/n): "):
             self.bank.collect(JAIL_FINE)
+            player.deduct_money(JAIL_FINE)
             player.in_jail = False
             player.jail_turns = 0
             print(f"  {player.name} paid the ${JAIL_FINE} fine and is released.")
@@ -342,7 +344,7 @@ class Game:
             player.add_money(GO_SALARY)
             print(f"  {player.name} passed Go and collected ${GO_SALARY}.")
         tile = self.board.get_tile_type(value)
-        if tile == "property":
+        if tile == "property" or tile == "railroad":
             prop = self.board.get_property_at(value)
             if prop:
                 self._handle_property_tile(player, prop)
@@ -373,7 +375,7 @@ class Game:
         """Return the player with the highest net worth."""
         if not self.players:
             return None
-        return min(self.players, key=lambda p: p.net_worth())
+        return max(self.players, key=lambda p: p.net_worth())
 
     def run(self):
         """Run the game loop until only one player remains or turns run out."""
