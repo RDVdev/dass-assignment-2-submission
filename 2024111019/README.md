@@ -273,7 +273,7 @@ Each section includes detailed testing reports:
 - **Black-Box**: `blackbox/Report.md`
 - **Integration**: `integration/report(after testing).md`
 - **White-Box**: `whitebox/report(whitebox).md`
-and also a report.pdf
+and also a report.pdf in each
 
 ---
 
@@ -281,5 +281,6 @@ and also a report.pdf
 
 - **Roll Number**: 2024111019
 - **Repository**: https://github.com/RDVdev/dass-assignment-2-submission.git
+- **Onedrive folder link**:https://iiithydresearch-my.sharepoint.com/:f:/g/personal/devansh_bansal_research_iiit_ac_in/IgAwqiPuGb-7Q4bKPX31DrfoAdnS6SDp86x8lvkECdfEk7g?e=cOb47Q
 - **Assignment**: DASS Assignment 2 - Software Testing
 
